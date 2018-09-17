@@ -8,13 +8,9 @@ from keras.utils import Progbar
 from data.txt_to_np import parse_raw_txt
 import argparse
 
-f = open('data/full_text.txt','r')
-full_text = parse_raw_txt()
-alphabet = sorted(list(set(full_text)))
-alph_idxs = dict((symbol, alphabet.index(symbol)) for symbol in alphabet)
-X_LEN = 50
-
-model.load_weights('model_saves/articanon.h5')
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', choices=['vanilla','beam'],default='beam')
+args = parser.parse_args()
 
 def char2vec(char):
     return np.eye(len(alphabet))[alph_idxs[char]]
@@ -88,7 +84,6 @@ def clean_raw_output(input_path, output_path='output/clean_output.txt'):
 def beamsearch_generate(k, model, nb_verse, output_path='output/raw_output_beamsearch.txt', seed=None):
     global X_LEN, alphabet
 
-    #length-normalized log
     score = lambda y, y_1: (y  + np.log(y_1))
 
     output = open(output_path,'w')
@@ -128,4 +123,17 @@ def beamsearch_generate(k, model, nb_verse, output_path='output/raw_output_beams
 
     clean_raw_output(input_path=output_path, output_path='output/clean_output_beamsearch.txt')
 
-beamsearch_generate(3, model, nb_verse=15, seed='All that we are is the result of what we have thought: it is')
+if __name__ == "__main__":
+
+    f = open('data/full_text.txt','r')
+    full_text = parse_raw_txt()
+    alphabet = sorted(list(set(full_text)))
+    alph_idxs = dict((symbol, alphabet.index(symbol)) for symbol in alphabet)
+    X_LEN = 50
+
+    model.load_weights('model_saves/articanon.h5')
+
+    if args.mode == 'beam':
+        beamsearch_generate(5, model, nb_verse=300, seed='All that we are is the result of what we have thought: it is')
+    if args.mode == 'vanilla':
+        vanilla_generate(model, nb_verse=300, temperature=.4)

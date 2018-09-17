@@ -23,27 +23,27 @@ def random_shuffle(x, y):
     shuffled_y = y[permutation]
     return shuffled_x, shuffled_y
 
-data = np.load('data/data.npz')
-x_seqs, y_chars = random_shuffle(data['x'], data['y'])
-assert x_seqs.shape[0] == y_chars.shape[0]
-
 def build_model(seq_len=X_LEN):
     x = Input((seq_len, alphabet_len))
-    encoder = Bidirectional(LSTM(hidden_dim, return_sequences=True, recurrent_dropout=.35, dropout=.3))(x)
+    encoder = Bidirectional(LSTM(hidden_dim, return_sequences=True, recurrent_dropout=.3, dropout=.2))(x)
     attention = Dense(1, activation='tanh')(encoder)
     attention = Flatten()(attention)
     attention = Activation('softmax')(attention)
     attention = RepeatVector(2*hidden_dim)(attention)
     attention = Permute([2, 1])(attention)
     attention = Multiply()([encoder, attention])
-    decoder = LSTM(hidden_dim, recurrent_dropout=.35, dropout=.3)(attention)
+    decoder = LSTM(hidden_dim, recurrent_dropout=.3, dropout=.2)(attention)
     y = Dense(alphabet_len, activation='softmax')(decoder)
     model = Model(inputs=x, outputs=y)
     return model
 
 if __name__ == "__main__":
+    data = np.load('data/data.npz')
+    x_seqs, y_chars = random_shuffle(data['x'], data['y'])
+    assert x_seqs.shape[0] == y_chars.shape[0]
+
     model = build_model()
-    model.compile(optimizer=RMSprop(lr=.003), loss='categorical_crossentropy', metrics=[categorical_accuracy, 'acc'])
+    model.compile(optimizer=RMSprop(lr=.002), loss='categorical_crossentropy', metrics=[categorical_accuracy, 'acc'])
     model.summary()
     plot_model(model, show_shapes=True, to_file='model_saves/model.png')
 
