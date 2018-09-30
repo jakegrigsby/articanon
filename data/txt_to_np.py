@@ -10,17 +10,22 @@ import numpy as np
 def parse_raw_txt(source='full_text.txt'):
     f = open(source,'r')
     full_text = f.read()
-    full_text = re.sub(r'[0-9]+.?\s?','21',full_text).lower() #delete verse counts, replace with start char (1)
-    full_text = re.sub(r'1\n','21',full_text) # add in end char (2)
-    full_text = re.sub(r'\n','',full_text)
-    full_text = re.sub(r'[\‘\’\`\'\"\—\"\”\ʹ\ʺ]?','\"',full_text) #who knew there were so many ways to use quotes?
+    full_text = re.sub(r'[^\x00-\x7F]', '', full_text) #remove non-ascii
+    full_text = re.sub(r'[0-9]+.?\s?\n?','',full_text).lower() #delete verse counts
+    full_text = re.sub(r'\w?\(.*\)\w?','', full_text) #paranthases are used in a way that really halts reading flow in this text.
+    full_text = re.sub(r'\W([.])\W', '\1 ', full_text)
+    full_text = re.sub(r'\W[,]\W', ', ', full_text)
+    full_text = re.sub(r'\n',' ',full_text)
+    full_text = re.sub(r'[\"\"\”\ʺ]','\"',full_text) #who knew there were so many ways to use quotes?
+    full_text = re.sub(r'[\‘\’\`\ʹ]','\'', full_text)
     full_text = re.sub(r'[\-•]?','',full_text)
+    full_text = re.sub(r'[‐\(\)]','',full_text)
     f.close()
     return full_text
 
 if __name__ == "__main__":
     full_text = parse_raw_txt('full_text.txt')
-    X_LEN = 50
+    X_LEN = 60
     STRIDE = 2
 
     x_seqs = []
@@ -43,12 +48,12 @@ if __name__ == "__main__":
             one_hot_chars = np.eye(len(alphabet))[chars]
             x_matrix.append(one_hot_chars)
         x_matrix = np.array(x_matrix)
-        assert x_matrix.shape == (len(x_seqs), X_LEN, len(alphabet))
+        assert x_matrix.shape == (len(x_seqs), X_LEN, len(alphabet)), print(x_matrix.shape)
 
         # Next we build the one hot encoded matrix of shape (# of seqs), (num of possible characters)
         y_chars_idxs = np.array([alph_idxs[char] for char in y_chars])
         y_matrix = np.eye(len(alphabet))[y_chars_idxs]
         assert y_matrix.shape == (len(x_seqs), len(alphabet))
-
+        
         # Save the data to a numpy archive format
         np.savez('data.npz', x=x_matrix, y=y_matrix)
