@@ -1,6 +1,5 @@
 """
-Jake Grigsby
-Cavalier Machine Learning, University of Virginia
+Cavalier Machine Learning, University of Virginian 
 September 2018
 """
 from train import build_model
@@ -53,15 +52,15 @@ class Articanon:
         """
         try:
             if self.beam:
-                self._generate_chapter_beam(kwargs['k'], kwargs['nb_verse'], kwargs['output_path'], kwargs['seed'])
+                self._generate_chapter_beam(kwargs['k'], kwargs['nb_verse'], kwargs['output_path'], kwargs['seed'], live_monitor=kwargs['live_monitor'])
             else:
                 self._generate_chapter_vanilla(kwargs['nb_verse'], kwargs['temperature'], kwargs['output_path'], kwargs['seed'])
         except KeyError:
-            print("Invalid argument for generation type " + "BEAM" if self.beam else "VANILLA")
+            print("Something went wrong with generation type " + ("beam. " if self.beam else "vanilla. ") + "Here is a really vague error message to help you out with that.")
 
     def write_book(self, nb_chapters, **kwargs):
         """
-        Generate the whole book in one function call!
+        Generate the whole book in one function call.
         --nb_chapters: number of chapters in the book.
         --kwargs: parameters for corresponding generation method.
         if self.enlightened:
@@ -82,7 +81,7 @@ class Articanon:
         """
         book = Book()
         book.set_title("Articanon")
-        book.set_author('CavML')
+        book.set_author('209.51.170.10')
         book.print_book_cover()
         for i, chapter in enumerate(range(nb_chapters)):
             self.generate_chapter(self.model, kwargs, output_path = 'chapter{}.txt'.format(i))
@@ -100,7 +99,6 @@ class Articanon:
         book.set_author('CavML')
         book.print_book_cover()
         chap_num = 0
-        title_of_chap = "Wisdom"
         for chapter in chapter_list:
             book.print_chapter(chap_num, chapter[1], chapter[0])
             chap_num += 1
@@ -140,16 +138,22 @@ class Articanon:
         probs = np.random.multinomial(1, preds, 1)
         return np.argmax(probs)
 
-    def _clean_raw_output(self, input_text, output_path='output/clean_output.txt'):
+    def _clean_raw_output(self, input_text, output_path='output/clean_output.txt', live_monitor=False):
         """
         Clean up raw output from generator. Saves to a txt file (output_path).
         """
         output_text_file = open(output_path, 'w')
         input_text = input_text.split('1')
         output_text = ''
-        for num, verse in enumerate(input_text):
-            output_text += "{}. {}".format(num + 1, verse) + '\n\n'
-        output_text = self.editor(output_text)
+        num = 0
+        for verse in input_text:
+            answer = 'y'
+            if live_monitor:
+                print(verse)
+                answer = input("Accept verse? (y/n)" )
+            if answer == 'y' or answer == 'yes' or answer == "Y":
+                 output_text += self.editor("{}. {}".format(num + 1, verse)) + '\n\n'
+                 num += 1
         output_text_file.write(output_text)
 
     def _generate_chapter_vanilla(self, nb_verse=300, temperature=.3, output_path = 'output/vanilla_output.txt', seed=None):
@@ -163,17 +167,17 @@ class Articanon:
         for verse in range(nb_verse):
             text += '1'
             for i in range(1000): #prevent infinite loops if verse never wants to end...
+                seed = seed.replace('1','')
                 try:
                     seed = text[-self.seq_len:]
                 except IndexError:
                     seed = text
-                seed = seed.replace('1','')
                 x = self.string2matrix(seed, self.seq_len)
                 preds = self.model.predict(x)[0]
                 next_idx = self._sample(preds, temperature)
                 next_char = self.idx2char(next_idx)
                 text += next_char
-                if next_char == '.' and i > 200: #arbitrary 'soft stopping'
+                if next_char == '.' and i > 150: #arbitrary 'soft stopping'
                     break
 
         self._clean_raw_output(text, output_path=output_path)
@@ -187,7 +191,7 @@ class Articanon:
         k_best_probs = [prob_vec[idx] for idx in k_best_idxs]
         return k_best_chars, k_best_probs
 
-    def _generate_chapter_beam(self, k, nb_verse, output_path, seed):
+    def _generate_chapter_beam(self, k, nb_verse, output_path, seed, live_monitor):
         """
         verse by verse beam search. Includes:
             - Repetition reduction
@@ -204,17 +208,18 @@ class Articanon:
             text += seed.lower()
         progbar = Progbar(nb_verse)
         for verse in range(nb_verse):
-            try:
+            try:x
                 seed = text[-self.seq_len:]
             except IndexError:
                 seed = text
-            hypotheses = [(seed, 0.)]
+            seed2 = seed.replace('1','')
+            hypotheses = [(seed2, 0.)]
             running = True
             while running:
                 new_hypotheses = []
                 terminated = 0
                 for h in hypotheses:
-                    if (h[0][-1] == '.' and len(h[0]) > 150) or len(h[0]) > 650: #this branch has terminated
+                    if re.match(r'[.?)!]', h[0][-1]) and len(h[0]) > 150: #this branch has terminated
                         new_hypotheses.append(h)
                         terminated += 1
                         continue
@@ -223,23 +228,37 @@ class Articanon:
                     for i, char in enumerate(k_best_chars):
                         s = score(h[1], k_best_probs[i])
                         #reduce repetition
-                        s = s - 100000000000 if (h[0][-10:]+char in h[0]) else s
+                        if h[0][-10:]+char in h[0]:
+                             s -= 50
                         new_hypotheses.append((h[0]+char, s))
                 if terminated <= k:
                     hypotheses = sorted(new_hypotheses, key=itemgetter(1))[-k:]
                 running = False if terminated == k else True
+            print(hypotheses)
             hypotheses = [self._final_score(h) for h in hypotheses]
+            print(hypotheses)
             best = sorted(hypotheses, key=itemgetter(1))[-1]
-            text += "1" +  best[0]
+            text += best[0][len(seed):] + "1"
             progbar.update(verse + 1)
-        if seed != None:
-           text = text[len(seed):] 
-        self._clean_raw_output(text, output_path=output_path)
+        self._clean_raw_output(text[:-1], output_path=output_path, live_monitor=live_monitor)
 
     def editor(self, text):
-        """TODO
         """
-        text = re.sub(r'[a-z]([.?!]) ([a-z])', r'\g<1> \g<2>'.capitalize(), text)
+        The dataset is too small to use capitalized letters, so the grammar the model learns has no concept of capitalization. This converts that learned grammar to proper English.
+        
+        Or we're just cheating.
+        """
+        #start of sentence capitalization
+        sentences = re.findall(r'[^.!?]+[.!?]', text)
+        text = ''
+        for sentence in sentences:
+            sentence = sentence.strip()
+            sentence = sentence.capitalize()
+            text += sentence + ' '
+        #text = re.sub(r'([0-9]+.)',r'\n\1', text)
+        #'i' capitalization
+        text = re.sub(r' i ', ' I ', text)
+        text = re.sub(r' i, ', ' I, ', text)
         return text
 
     def _final_score(self, hypothesis):
@@ -248,14 +267,16 @@ class Articanon:
         """
         string, score = hypothesis[0], hypothesis[1]
         #length normalization
-        score /= len(string)**.5
+        score /= len(string)**.9
         #better vocabulary, longer sentences
         words = string.split(' ')
+        #print(words)
         unique_words = len(set(words))
-        score += .5*unique_words +.2*len(words)
+        #print(unique_words)
+        score += 5*unique_words
         #spelling
         misspelled = self.spellchecker.unknown(words)
-        score -= 5*len(misspelled)
+        score -= 200*len(misspelled)
 
         return (string, score)
 
@@ -264,11 +285,10 @@ if __name__ == "__main__":
     parser.add_argument('--ver', choices=['vanilla','beam'],default='beam')
     args = parser.parse_args()
     model = train.build_model()
-    model.load_weights('model_saves/articanon.h5')
+    model.load_weights('model_saves/articanon.h5f')
     generator = Articanon(model)
     if args.ver == 'beam':
-        generator.generate_chapter(nb_verse=2, k=2, output_path='output/first_chap_output.txt', seed="In truth, all of life is suffering. What we do not know, we")
-        generator.assemble_book([['output/first_chap_output.txt','Hello']])
+        generator.generate_chapter(nb_verse=3, k=20, output_path='output/first_chap_output.txt', seed="Truly, what is the sound of one hand clapping?", live_monitor=False)
     if args.ver == 'vanilla':
         generator.beam = False
         generator.generate_chapter(nb_verse=3, temperature=.4, output_path='output/first_chap_output.txt', seed='He who lives looking for pleasures only, his senses uncontrolled, immoderate in his food')
