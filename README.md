@@ -1,6 +1,6 @@
 # The Arti Canon: Neural Text Generation
 ---
-![articanon-gif]('./figures/buddha_gif.gif')
+![]('https://gph.is/2pCxurv')
 >         "Some quote from articanon here"
 >                         - A Computer
 
