@@ -1,3 +1,7 @@
+"""
+Cavalier Machine Learning, University of Virginia
+September 2018
+"""
 from fpdf import FPDF
 
 TITLE = 'ArtiCanon'
@@ -62,6 +66,9 @@ class Book(FPDF):
         self.chapter_body(name)
 
     def print_book_cover(self):
+        """
+        Add cover to pdf
+        """
         self.add_page()
         self.book_cover()
 

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     plot_model(model, show_shapes=True, to_file='model_saves/model.png')
 
     callbacks = [
-        TensorBoard(log_dir='log_dir/small_model/'),
+        TensorBoard(log_dir='log_dir/'),
         ModelCheckpoint('model_saves/articanon_best.h5f', period=2, monitor='acc', save_best_only=True),
         ModelCheckpoint('model_saves/articanon_latest.h5f', period=2, save_best_only=False)
     ]
