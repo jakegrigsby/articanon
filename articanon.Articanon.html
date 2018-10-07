@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: class Articanon</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><strong>articanon.Articanon</strong> = <a name="articanon.Articanon">class Articanon</a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>The&nbsp;main&nbsp;wrapper&nbsp;class&nbsp;for&nbsp;generating&nbsp;text.&nbsp;Uses&nbsp;a&nbsp;language&nbsp;model&nbsp;(&nbsp;p(y|x_0...x_n)&nbsp;)&nbsp;to&nbsp;generate&nbsp;text&nbsp;verse&nbsp;by&nbsp;verse.<br>
+Verses&nbsp;are&nbsp;compiled&nbsp;into&nbsp;a&nbsp;pdf,&nbsp;using&nbsp;book.Book.<br>
+&nbsp;<br>
+--model:&nbsp;a&nbsp;keras-based&nbsp;language&nbsp;Model&nbsp;object.<br>
+--repetition_penalty:&nbsp;score&nbsp;penalty&nbsp;for&nbsp;repetition&nbsp;during&nbsp;beam&nbsp;search.<br>
+--spell_penalty:&nbsp;score&nbsp;penalty&nbsp;for&nbsp;misspelled&nbsp;words.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>
+--unique_words_reward:&nbsp;score&nbsp;reward&nbsp;for&nbsp;unique&nbsp;words,&nbsp;encouraging&nbsp;larger&nbsp;vocabulary.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>
+--length_normalization_alpha:&nbsp;exponent&nbsp;for&nbsp;length&nbsp;normalization&nbsp;of&nbsp;beam&nbsp;search&nbsp;hypotheses.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Articanon-__init__"><strong>__init__</strong></a>(self, model=None, repetition_penalty=50, spell_penalty=500, unique_words_reward=5, length_normalization_alpha=0.5)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
+
+<dl><dt><a name="Articanon-assemble_book"><strong>assemble_book</strong></a>(self, chapter_list)</dt><dd><tt>Utility&nbsp;function&nbsp;for&nbsp;assembling&nbsp;pre-generated&nbsp;chapters&nbsp;into&nbsp;a&nbsp;pdf.<br>
+--chapter_list&nbsp;=&nbsp;list&nbsp;of&nbsp;.txt&nbsp;generation&nbsp;file&nbsp;names&nbsp;outputed&nbsp;by&nbsp;generate_chapter()&nbsp;or&nbsp;similar&nbsp;generation&nbsp;algs.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In&nbsp;format&nbsp;of&nbsp;[['filename.txt',&nbsp;'chapter&nbsp;name'],&nbsp;['filename2.txt',&nbsp;'2nd&nbsp;chapter&nbsp;name'],&nbsp;etc]</tt></dd></dl>
+
+<dl><dt><a name="Articanon-char2vec"><strong>char2vec</strong></a>(self, char)</dt><dd><tt>Convert&nbsp;ascii&nbsp;character&nbsp;to&nbsp;one_hot_vector,&nbsp;as&nbsp;determined&nbsp;by&nbsp;one&nbsp;hot&nbsp;idxs&nbsp;in&nbsp;txt_to_np.py</tt></dd></dl>
+
+<dl><dt><a name="Articanon-data_tester"><strong>data_tester</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Articanon-editor"><strong>editor</strong></a>(self, text)</dt><dd><tt>The&nbsp;dataset&nbsp;is&nbsp;too&nbsp;small&nbsp;to&nbsp;use&nbsp;capitalized&nbsp;letters,&nbsp;so&nbsp;the&nbsp;grammar&nbsp;the&nbsp;model&nbsp;learns&nbsp;has&nbsp;no&nbsp;concept&nbsp;of&nbsp;capitalization.&nbsp;This&nbsp;converts&nbsp;that&nbsp;learned&nbsp;grammar&nbsp;to&nbsp;proper&nbsp;English.<br>
+&nbsp;<br>
+Or&nbsp;we're&nbsp;just&nbsp;cheating.</tt></dd></dl>
+
+<dl><dt><a name="Articanon-filter_verses"><strong>filter_verses</strong></a>(self, text_path)</dt><dd><tt>Simple&nbsp;routine&nbsp;for&nbsp;filtering&nbsp;out&nbsp;unwanted&nbsp;verses.&nbsp;Call&nbsp;after&nbsp;a&nbsp;chapter&nbsp;has&nbsp;been&nbsp;generated.<br>
+--text_path:&nbsp;the&nbsp;raw&nbsp;output&nbsp;of&nbsp;the&nbsp;generation&nbsp;step.</tt></dd></dl>
+
+<dl><dt><a name="Articanon-generate_chapter_beam"><strong>generate_chapter_beam</strong></a>(self, k, nb_verse, output_path, delete_first, live_monitor, seed=None)</dt><dd><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verse&nbsp;by&nbsp;verse&nbsp;beam&nbsp;search.&nbsp;Includes:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;Repetition&nbsp;reduction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;final&nbsp;re-scoring<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Takes&nbsp;a&nbsp;while&nbsp;to&nbsp;run.&nbsp;You&nbsp;can&nbsp;keep&nbsp;an&nbsp;eye&nbsp;on&nbsp;the&nbsp;progress&nbsp;using&nbsp;the&nbsp;keras-style&nbsp;progress&nbsp;bar.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generates&nbsp;in&nbsp;format&nbsp;of&nbsp;'###.&nbsp;verse&nbsp;text&nbsp;here<br>
+'.&nbsp;That&nbsp;output&nbsp;is&nbsp;automatically&nbsp;cleaned&nbsp;by&nbsp;_clean_raw_output()</tt></dd></dl>
+
+<dl><dt><a name="Articanon-generate_chapter_vanilla"><strong>generate_chapter_vanilla</strong></a>(self, nb_verse=300, temperature=0.3, output_path='output/vanilla_output.txt', seed=None)</dt><dd><tt>Generates&nbsp;text&nbsp;using&nbsp;repeated&nbsp;single-character&nbsp;prediction&nbsp;loop.&nbsp;Samples&nbsp;from&nbsp;language&nbsp;model's&nbsp;output&nbsp;distribution&nbsp;according&nbsp;to&nbsp;some&nbsp;temperature.</tt></dd></dl>
+
+<dl><dt><a name="Articanon-idx2char"><strong>idx2char</strong></a>(self, idx)</dt><dd><tt>Convert&nbsp;index&nbsp;(taken&nbsp;from&nbsp;one&nbsp;hot&nbsp;encoded&nbsp;vector)&nbsp;to&nbsp;character,&nbsp;as&nbsp;determined&nbsp;by&nbsp;txt_to_np.py</tt></dd></dl>
+
+<dl><dt><a name="Articanon-k_best"><strong>k_best</strong></a>(self, k, prob_vec)</dt><dd><tt>Return&nbsp;k-best&nbsp;hypotheses.</tt></dd></dl>
+
+<dl><dt><a name="Articanon-new_chapter_title"><strong>new_chapter_title</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Articanon-string2matrix"><strong>string2matrix</strong></a>(self, string, max_len)</dt><dd><tt>Convert&nbsp;ascii&nbsp;string&nbsp;to&nbsp;one_hot_encoded&nbsp;matrix,&nbsp;as&nbsp;determined&nbsp;by&nbsp;txt_to_np.py</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>random_seed</strong></dt>
+<dd><tt>new&nbsp;random&nbsp;seed&nbsp;from&nbsp;the&nbsp;source&nbsp;text.&nbsp;used&nbsp;to&nbsp;seed&nbsp;first&nbsp;verse&nbsp;of&nbsp;each&nbsp;chapter,<br>
+which&nbsp;is&nbsp;usually&nbsp;deleted.</tt></dd>
+</dl>
+</td></tr></table>
+</body></html>

@@ -54,10 +54,11 @@ if __name__ == "__main__":
     x_matrix = np.array(x_matrix)
     assert x_matrix.shape == (len(x_seqs), X_LEN, len(alphabet)), print(x_matrix.shape)
 
+    print(len(x_matrix))
         # Next we build the one hot encoded matrix of shape (# of seqs), (num of possible characters)
     y_chars_idxs = np.array([alph_idxs[char] for char in y_chars])
     y_matrix = np.eye(len(alphabet))[y_chars_idxs]
     assert y_matrix.shape == (len(x_seqs), len(alphabet))
-        
+
     # Save the data to a numpy archive format
     np.savez('data.npz', x=x_matrix, y=y_matrix)

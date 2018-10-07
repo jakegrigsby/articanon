@@ -20,8 +20,12 @@ class Articanon:
     Verses are compiled into a pdf, using book.Book.
 
     --model: a keras-based language Model object.
+    --repetition_penalty: score penalty for repetition during beam search.
+    --spell_penalty: score penalty for misspelled words. Calculated during final evaluation of beam search.
+    --unique_words_reward: score reward for unique words, encouraging larger vocabulary. Calculated during final evaluation of beam search.
+    --length_normalization_alpha: exponent for length normalization of beam search hypotheses. Calculated during final evaluation of beam search.
     """
-    def __init__(self, model=None):
+    def __init__(self, model=None, repetition_penalty=50, spell_penalty=500, unique_words_reward=5, length_normalization_alpha=.5):
         f = open('data/full_text.txt','r')
         self.full_text = parse_raw_txt('data/full_text.txt')
         f.close()
@@ -34,6 +38,10 @@ class Articanon:
         with open('data/title_names.txt','r') as f:
             self.titles = f.read().split('\n')
             np.random.shuffle(self.titles)
+        self.repetition_penalty = repetition_penalty
+        self.spell_penalty = spell_penalty
+        self.unique_words_reward = unique_words_reward
+        self.length_normalization_alpha = length_normalization_alpha
 
     def data_tester(self):
         data = np.load('data/data.npz')
@@ -168,6 +176,10 @@ class Articanon:
 
     @property
     def random_seed(self):
+        """
+        new random seed from the source text. used to seed first verse of each chapter,
+        which is usually deleted.
+        """
         rand_start = np.random.randint(0, len(self.full_text))
         return self.full_text[rand_start:rand_start+self.seq_len]
 
@@ -210,7 +222,7 @@ class Articanon:
                         s = score(h[1], k_best_probs[i])
                         #reduce repetition
                         if h[0][-15:]+char in h[0]:
-                             s -= 50
+                             s -= self.repetition_penalty
                         new_hypotheses.append((h[0]+char, s))
                 if terminated <= k:
                     hypotheses = sorted(new_hypotheses, key=itemgetter(1))[-k:]
@@ -249,7 +261,7 @@ class Articanon:
         """
         string, score = hypothesis[0], hypothesis[1]
         #length normalization
-        score /= len(string)
+        score /= len(string)**self.length_normalization_alpha
         #better vocabulary, longer sentences
         words = string.split(' ')
         for i, word in enumerate(words):
@@ -257,10 +269,10 @@ class Articanon:
         #print(words)
         unique_words = len(set(words))
         #print(unique_words)
-        score += 5*unique_words
+        score += self.unique_words_reward*unique_words
         #spelling
         misspelled = self.spellchecker.unknown(words)
-        score -= 2000*len(misspelled)
+        score -= self.spell_penalty*len(misspelled)
         return (string, score)
 
 if __name__ == "__main__":

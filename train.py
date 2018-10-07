@@ -14,7 +14,7 @@ from keras.utils import plot_model
 
 BATCH_SIZE = 128
 X_LEN = 60
-ALPHABET_LEN = 38
+ALPHABET_LEN = 40
 HIDDEN_DIM = 350
 NB_CYCLES = 12
 EPOCHS = 600
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         ModelCheckpoint('model_saves/articanon_latest.h5f', period=2, save_best_only=False)
     ]
 
-    history = model.fit(x_seqs, y_chars, batch_size=512, epochs=EPOCHS, callbacks=callbacks, validation_split=0)
+    history = model.fit(x_seqs, y_chars, batch_size=512, epochs=EPOCHS, callbacks=callbacks, validation_split=0, shuffle=True)
