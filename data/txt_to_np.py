@@ -6,24 +6,33 @@ References:
 https://www.tibethouse.jp/about/buddhism/text/pdfs/Bodhisattvas_way_English.pdf
 http://promienie.net/images/dharma/books/shantideva_way-of-bodhisattva.pdf
 https://www.buddhanet.net/pdf_file/scrndhamma.pdf
+https://archive.org/stream/ZenMindBeginnersMind-ShunruyuSuzuki/zenmind_djvu.txt
 """
 import re
 import numpy as np
 
 def parse_raw_txt(source='full_text.txt'):
+    """
+    Use some sloppy regex expressions to take copy-pasted full text, remove unwanted characters,
+    and format correctly for teacher forcing dataset.
+    """
     f = open(source,'r')
     full_text = f.read()
     #print("Original text length: " + str(len(full_text)))
     full_text = re.sub(r'[^\x00-\x7F]', '', full_text) #remove non-ascii
     full_text = re.sub(r'[0-9]+.?\s?\n?','',full_text).lower() #delete verse counts
-    full_text = re.sub(r'\n',' ',full_text)
-    full_text = re.sub(r'(\w)[,](\w)', r'\1, \2', full_text)
+    full_text = re.sub(r'\n+',' ',full_text)
+    full_text = re.sub(r' ([,.;]) ', r'\1 ', full_text)
+    full_text = re.sub(r'.\(', r'. \(',full_text)
     full_text = re.sub(r'[\"\"\”\ʺ]','\"',full_text) #who knew there were so many ways to use quotes?
     full_text = re.sub(r'[\‘\’\`\ʹ]','\'', full_text)
-    full_text = re.sub(r'[\-•]?','',full_text)
-    full_text = re.sub(r'[‐\\]','',full_text)
+    full_text = re.sub(r'[\-•/‐\\]?','',full_text)
+    full_text = re.sub(r'[\[]','(', full_text)
+    full_text = re.sub(r'[\]]',')', full_text)
+    full_text = re.sub(r'\((.){0,150}\)[.,!?]?','', full_text)
+    full_text = re.sub(r'\(','',full_text)
     #print("Final text length: " + str(len(full_text)))
-    #print("Sample: \n" + full_text[-1000:])
+    #print("Sample: \n" + full_text)
     f.close()
     return full_text
 

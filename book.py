@@ -4,7 +4,7 @@ September 2018
 """
 from fpdf import FPDF
 
-TITLE = 'ArtiCanon'
+TITLE = 'The Arti Canon'
 
 class Book(FPDF):
     """

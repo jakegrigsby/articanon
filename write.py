@@ -17,15 +17,14 @@ model.load_weights('./model_saves/articanon_best.h5f')
 articanon = Articanon(model)
 
 for chap in range(args.chapters):
-    print("\nGenerating chapter {}...".format(chap))
+    print("\nGenerating chapter {}...".format(chap+1))
     articanon.generate_chapter_beam(nb_verse=args.verses,
                                 k=args.k,
-                                output_path='./output/chapter{}'.format(chap),
-                                delete_first=True,
-                                live_monitor=False)
+                                output_path='./output/chapter{}.txt'.format(chap+1),
+                                delete_first=True)
 chapter_list = []
 for chap in range(args.chapters):
-    filename = './output/chapter{}'.format(chap)
+    filename = './output/chapter{}.txt'.format(chap+1)
     articanon.filter_verses(filename)
     chapter_list.append((filename, articanon.new_chapter_title()))
 

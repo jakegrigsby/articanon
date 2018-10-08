@@ -82,6 +82,8 @@ class Articanon:
     def string2matrix(self, string, max_len):
         """
         Convert ascii string to one_hot_encoded matrix, as determined by txt_to_np.py
+        --string: input string.
+        --max_len: size of fixed output vector. Shorter inputs are padded with zeros, longer inputs are trimmed.
         """
         string = string[-max_len:]
         matrix = np.zeros((1, self.seq_len, len(self.alphabet)))
@@ -93,6 +95,8 @@ class Articanon:
     def _sample(self, preds, temp):
         """
         Sampling from model's output with an adjusted distribution.
+        --preds: vector output of a softmax layer.
+        --temp: temperature for sampling function. Higher values increase selection of less-likely characters.
         """
         preds = np.asarray(preds).astype('float64')
         preds = np.log(preds) / temp
@@ -106,24 +110,31 @@ class Articanon:
         Simple routine for filtering out unwanted verses. Call after a chapter has been generated.
         --text_path: the raw output of the generation step.
         """
-        input_text = open(text_path, 'r+')
-        input_text = input_text.read()
+        f = open(text_path, 'r')
+        input_text = f.read()
+        print(input_text)
+        f.close()
         verses = input_text.split('\n\n')
-        for num, verse in enumerate(verses[:-1]):
+        num = 1
+        text = ''
+        for verse in verses[:-1]:
             print(verse)
             accept = input("Accept this verse? (y/n) ")
             if accept.strip() == 'y':
-                verses[num] = re.sub(r'[0-9]*\.','',verse) + "1"
-            else:
-                verses[num] = ''
-        text = ''
-        for verse in verses:
-            text += verse
-        self._clean_raw_output(text[:-1], text_path) #cut the last '1' out
+                verse = re.sub(r'[0-9]+\.','',verse)
+                text += "{}. {}".format(num, verse) + '\n\n'
+                num += 1
+        f = open(text_path, 'w')
+        f.write(text)
+        f.close()
 
-    def _clean_raw_output(self, input_text, delete_first=False, output_path='output/clean_output.txt', live_monitor=False):
+    def _clean_raw_output(self, input_text, delete_first=False, output_path='output/clean_output.txt'):
         """
         Clean up raw output from generator. Saves to a txt file (output_path).
+        --delete_first: Delete the first verse. Used when generating multiple chapters
+        and giving the generator a seed for each one is too tedious; allows for more
+        randomness and 'self inspiration'.
+        --output_path: where to save the cleaned txt file.
         """
         output_text_file = open(output_path, 'w')
         input_text = input_text.split('1')
@@ -131,18 +142,18 @@ class Articanon:
         output_text = ''
         num = 0
         for verse in input_text:
-            answer = 'y'
-            if live_monitor:
-                print(verse)
-                answer = input("Accept verse? (y/n)" )
-            if answer == 'y' or answer == 'yes' or answer == "Y":
-                 output_text += self.editor("{}. {}".format(num + 1, verse)) + '\n\n'
-                 num += 1
+            output_text += self.editor("{}. {}".format(num + 1, verse.strip())) + '\n\n'
+            num += 1
         output_text_file.write(output_text)
+        output_text_file.close()
 
     def generate_chapter_vanilla(self, nb_verse=300, temperature=.3, output_path = 'output/vanilla_output.txt', seed=None):
         """
         Generates text using repeated single-character prediction loop. Samples from language model's output distribution according to some temperature.
+        --nb_verse: number of verses to generate.
+        --temperature: temperature for sampling function. Higher values increase selection of less-likely characters.
+        --output_path: where to output raw txt file containing generated text.
+        --seed: Starting seed. This vanilla version doesn't include the delete_first/random_seed approach of beam search.
         """
         text = ''
         if seed != None:
@@ -168,6 +179,8 @@ class Articanon:
     def k_best(self, k, prob_vec):
         """
         Return k-best hypotheses.
+        --k: beam search width
+        --prob_vec: vector of character probabilities.
         """
         k_best_idxs = np.argsort(prob_vec)[-k:]
         k_best_chars = [self.idx2char(idx) for idx in k_best_idxs]
@@ -183,7 +196,7 @@ class Articanon:
         rand_start = np.random.randint(0, len(self.full_text))
         return self.full_text[rand_start:rand_start+self.seq_len]
 
-    def generate_chapter_beam(self, k, nb_verse, output_path, delete_first, live_monitor, seed=None):
+    def generate_chapter_beam(self, k, nb_verse, output_path, delete_first, seed=None):
         """
         verse by verse beam search. Includes:
             - Repetition reduction
@@ -192,6 +205,15 @@ class Articanon:
         Takes a while to run. You can keep an eye on the progress using the keras-style progress bar.
 
         Generates in format of '###. verse text here\n'. That output is automatically cleaned by _clean_raw_output()
+        --k: beam search width. The tree search will clip itself after the *k* best hypotheses. Very effective between 1-10,
+        with diminishing return after that. Heavily impacts runtime.
+        --nb_verse: number of verses to generate.
+        --delete_first: Delete the first verse. Used when generating multiple chapters
+        and giving the generator a seed for each one is too tedious; allows for more
+        randomness and 'self inspiration'.
+        --seed: optional starting seed for text generation loop-if you want to prompt
+        articanon to talk about something specific. If none is given, a random seed is taken
+        from the source text and is used to write the first verse, which is then discarded.
         """
         if delete_first:
             nb_verse += 1
@@ -232,13 +254,13 @@ class Articanon:
             best = best[0][len(seed):] + "1"
             text += best
             progbar.update(verse + 1)
-        self._clean_raw_output(text[:-1], delete_first=delete_first, output_path=output_path, live_monitor=live_monitor)
+        self._clean_raw_output(text[:-1], delete_first=delete_first, output_path=output_path)
 
     def editor(self, text):
         """
         The dataset is too small to use capitalized letters, so the grammar the model learns has no concept of capitalization. This converts that learned grammar to proper English.
-
         Or we're just cheating.
+        --text: input text.
         """
         #start of sentence capitalization
         sentences = re.findall(r'[^.!?]+[.!?]', text)
@@ -253,7 +275,14 @@ class Articanon:
         return text
 
     def new_chapter_title(self):
-        return self.titles.pop()
+        """
+        return 'random' chapter title from shuffled list of Dhammapada chapter titles.
+        If all titles have been used, you've read so much Buddhism you've reached enlightenment;
+        titles will be called Awakening.
+        """
+        if self.titles:
+            return self.titles.pop()
+        return "Awakening"
 
     def _final_score(self, hypothesis):
         """
@@ -265,7 +294,7 @@ class Articanon:
         #better vocabulary, longer sentences
         words = string.split(' ')
         for i, word in enumerate(words):
-            words[i] = re.sub(r'[,\.?1:;\)\(]','',word)
+            words[i] = re.sub(r'[,\.?1\]\[:;\)\(]','',word)
         #print(words)
         unique_words = len(set(words))
         #print(unique_words)
@@ -286,7 +315,7 @@ if __name__ == "__main__":
     model.load_weights('model_saves/articanon.h5f')
     generator = Articanon(model)
     if args.ver == 'beam':
-        generator.generate_chapter_beam(nb_verse=3, k=5, output_path='output/first_chap_output.txt', seed="And he who lives a hundred years, idle and weak, a life of one day is better", live_monitor=False)
+        generator.generate_chapter_beam(nb_verse=3, k=5, output_path='output/first_chap_output.txt', seed="And he who lives a hundred years, idle and weak, a life of one day is better")
         generator.filter_verses('output/first_chap_output.txt')
     if args.ver == 'vanilla':
         generator.generate_chapter_vanilla(nb_verse=3, temperature=.4, output_path='output/first_chap_output.txt', seed='He who lives looking for pleasures only, his senses uncontrolled, immoderate in his food')
