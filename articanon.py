@@ -16,7 +16,7 @@ from spellchecker import SpellChecker
 
 class Articanon:
     """
-    The main wrapper class for generating text. Uses a language model ( p(y|x_0...x_n) ) to generate text verse by verse.
+    The main wrapper class for generating text. Uses a language model ( f(x) = p(x_n|x_0...x_n-1) ) to generate text verse by verse.
     Verses are compiled into a pdf, using book.Book.
 
     --model: a keras-based language Model object.
@@ -25,7 +25,7 @@ class Articanon:
     --unique_words_reward: score reward for unique words, encouraging larger vocabulary. Calculated during final evaluation of beam search.
     --length_normalization_alpha: exponent for length normalization of beam search hypotheses. Calculated during final evaluation of beam search.
     """
-    def __init__(self, model=None, repetition_penalty=50, spell_penalty=500, unique_words_reward=5, length_normalization_alpha=.5):
+    def __init__(self, model=None, repetition_penalty=5, spell_penalty=10, unique_words_reward=.55, length_normalization_alpha=.3,):
         f = open('data/full_text.txt','r')
         self.full_text = parse_raw_txt('data/full_text.txt')
         f.close()
@@ -112,7 +112,6 @@ class Articanon:
         """
         f = open(text_path, 'r')
         input_text = f.read()
-        print(input_text)
         f.close()
         verses = input_text.split('\n\n')
         num = 1
@@ -147,7 +146,7 @@ class Articanon:
         output_text_file.write(output_text)
         output_text_file.close()
 
-    def generate_chapter_vanilla(self, nb_verse=300, temperature=.3, output_path = 'output/vanilla_output.txt', seed=None):
+    def generate_chapter_vanilla(self, nb_verse=30, temperature=.3, output_path = 'output/vanilla_output.txt', seed=None):
         """
         Generates text using repeated single-character prediction loop. Samples from language model's output distribution according to some temperature.
         --nb_verse: number of verses to generate.
@@ -160,21 +159,23 @@ class Articanon:
             seed = seed[:self.seq_len]
             text += seed.lower()
         for verse in range(nb_verse):
-            text += '1'
+            verse_len = 0
             for i in range(1000): #prevent infinite loops if verse never wants to end...
-                seed = seed.replace('1','')
+                seed = text.replace('1','')
                 try:
-                    seed = text[-self.seq_len:]
+                    seed = seed[-self.seq_len:]
                 except IndexError:
-                    seed = text
+                    seed = seed
                 x = self.string2matrix(seed, self.seq_len)
                 preds = self.model.predict(x)[0]
                 next_idx = self._sample(preds, temperature)
                 next_char = self.idx2char(next_idx)
+                verse_len += 1
                 text += next_char
-                if next_char == '.' and i > 150: #arbitrary 'soft stopping'
+                if re.match(r'[.?)!]', text[-1]) and verse_len > 90: #arbitrary 'soft stopping'
                     break
-        self._clean_raw_output(text, output_path=output_path)
+            text += "1"
+        self._clean_raw_output(text, output_path=output_path, delete_first=False)
 
     def k_best(self, k, prob_vec):
         """
@@ -221,9 +222,10 @@ class Articanon:
         #lambda function for accumlated sentence score
         score = lambda y, y_1: (y  + np.log(y_1))
         text = seed[:self.seq_len].lower()
+        #keras-style progress bar
         progbar = Progbar(nb_verse)
         for verse in range(nb_verse):
-            seed = text.replace('1','')
+            seed = text.replace('1','') #1 is used to split verses but isn't part of the model's vocabulary
             try:
                 seed = seed[-self.seq_len:]
             except IndexError:
@@ -247,11 +249,13 @@ class Articanon:
                              s -= self.repetition_penalty
                         new_hypotheses.append((h[0]+char, s))
                 if terminated <= k:
-                    hypotheses = sorted(new_hypotheses, key=itemgetter(1))[-k:]
+                    hypotheses = sorted(new_hypotheses, key=itemgetter(1))[-k:] #consider the k best options next iteration
                 running = False if terminated >= k else True
+            #print(sorted(hypotheses, key=itemgetter(1)))
             hypotheses = [self._final_score(h) for h in hypotheses]
+            #print(sorted(hypotheses, key=itemgetter(1)))
             best = sorted(hypotheses, key=itemgetter(1))[-1]
-            best = best[0][len(seed):] + "1"
+            best = best[0][len(seed):] + "1" #'1' added for splitting
             text += best
             progbar.update(verse + 1)
         self._clean_raw_output(text[:-1], delete_first=delete_first, output_path=output_path)
@@ -312,11 +316,11 @@ if __name__ == "__main__":
     parser.add_argument('--ver', choices=['vanilla','beam'],default='beam')
     args = parser.parse_args()
     model = train.build_model()
-    model.load_weights('model_saves/articanon.h5f')
+    model.load_weights('model_saves/articanon_best.h5f')
     generator = Articanon(model)
     if args.ver == 'beam':
-        generator.generate_chapter_beam(nb_verse=3, k=5, output_path='output/first_chap_output.txt', seed="And he who lives a hundred years, idle and weak, a life of one day is better")
+        generator.generate_chapter_beam(nb_verse=1, k=15, output_path='output/first_chap_output.txt', seed='what is the runtime complexity of a doubly linked list with ghost nodes?', delete_first=False)
         generator.filter_verses('output/first_chap_output.txt')
     if args.ver == 'vanilla':
-        generator.generate_chapter_vanilla(nb_verse=3, temperature=.4, output_path='output/first_chap_output.txt', seed='He who lives looking for pleasures only, his senses uncontrolled, immoderate in his food')
+        generator.generate_chapter_vanilla(nb_verse=1, temperature=.8, output_path='output/first_chap_output.txt', seed='Let a wise man blow off the impurities of his self, as a smith blows off the impurities of silver')
     generator.assemble_book([['output/first_chap_output.txt', 'Enlightenment']])

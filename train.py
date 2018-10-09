@@ -4,11 +4,10 @@ September 2018
 """
 from keras.models import Model
 from keras.layers.core import *
-from keras.layers import Input, Bidirectional, LSTM, Multiply, Embedding
+from keras.layers import Input, Bidirectional, LSTM, Multiply
 from keras.optimizers import Adam
 from keras.metrics import categorical_accuracy
-from keras.regularizers import l2
-from keras.callbacks import TensorBoard, EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from keras.callbacks import TensorBoard, ModelCheckpoint
 import numpy as np
 from keras.utils import plot_model
 
@@ -17,12 +16,6 @@ X_LEN = 60
 ALPHABET_LEN = 35
 HIDDEN_DIM = 350
 EPOCHS = 600
-
-def random_shuffle(x, y):
-    permutation = np.random.permutation(x.shape[0])
-    shuffled_x = x[permutation]
-    shuffled_y = y[permutation]
-    return shuffled_x, shuffled_y
 
 def build_model(seq_len=X_LEN):
     x = Input((seq_len, ALPHABET_LEN))
@@ -42,7 +35,7 @@ def build_model(seq_len=X_LEN):
 
 if __name__ == "__main__":
     data = np.load('data/data.npz')
-    x_seqs, y_chars = random_shuffle(data['x'], data['y'])
+    x_seqs, y_chars = data['x'], data['y']
     assert x_seqs.shape[0] == y_chars.shape[0]
 
     model = build_model()

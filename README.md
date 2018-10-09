@@ -2,13 +2,13 @@
 
 <img src='https://media.giphy.com/media/jnUMLiKLwxuPdnji4J/giphy.gif' style='width: 100%'>
 
->         "Some quote from articanon here"
+>         "Why should I be angry with the childish pain of conditioned existence?"
 >                          - A Computer
 
 Arti Canon is a neural text generation project designed to generate believable writing based on classic texts from Buddhism. It processes text from *The Dhammapada*, *Zen Mind, Beginner's Mind*, as well as two different translations of *The Bodhicaryvatara* (see references for links to the originals).
 
 #### A brief overview of the process:
-1. `data/txt_to_npy.py` parses raw .txt copies of the original texts into a numpy datset consisting of (*x*,*y*) pairs of (*sequence of characters*, *next character*). This matrix data is saved to the data directory.
+1. `data/txt_to_npy.py` parses raw .txt copies of the original texts into a numpy datset consisting of (*x*,*y*) pairs of (*sequence of characters*, *next character*). This array is saved to the data directory.
 2. `train.py` builds a sequence to sequence language model in Keras, then trains it on the text data, saving the weights to the model_saves directory.
 3. `articanon.py` contains wrappers and utility functions for the text generation process.
 4. `book.py` handles conversion from the raw .txt output of the generator to a pdf.
@@ -19,7 +19,7 @@ Arti Canon is a neural text generation project designed to generate believable w
 ##### Using the trained model to write your own book
 You can generate your own version of the articanon with the following command:  
 ```bash
- write.py --k *int* --chapters *int* --verses *int*
+ write.py --chapters *int* --verses *int* --k *int*
 ```
 Where **k** is the width of the generator's beam search, **chapters** is the number of chapters to generate and **verses** is the number of pseudo-intellectual verses you'd like in each chapter.
 
