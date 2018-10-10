@@ -36,7 +36,7 @@ class Articanon:
         self.spellchecker = SpellChecker()
         self.spellchecker.word_frequency.load_text(self.full_text) #load domain specific words from training data
         with open('data/title_names.txt','r') as f:
-            self.titles = f.read().split('\n')
+            self.titles = f.read().split('\n')[:-1]
             np.random.shuffle(self.titles)
         self.repetition_penalty = repetition_penalty
         self.spell_penalty = spell_penalty
@@ -51,7 +51,7 @@ class Articanon:
             print([self.idx2char(np.argmax(x)) for x in sentence])
             print(self.idx2char(np.argmax(y_chars[r_subset][i])))
 
-    def assemble_book(self, chapter_list):
+    def assemble_book(self, chapter_list, output_path='output/articanon.pdf'):
         """
         Utility function for assembling pre-generated chapters into a pdf.
         --chapter_list = list of .txt generation file names outputed by generate_chapter() or similar generation algs.
@@ -65,7 +65,7 @@ class Articanon:
         for chapter in chapter_list:
             book.print_chapter(chap_num, chapter[1], chapter[0])
             chap_num += 1
-        book.output('output/articanon.pdf', 'F')
+        book.output(output_path, 'F')
 
     def char2vec(self, char):
         """
@@ -177,13 +177,18 @@ class Articanon:
             text += "1"
         self._clean_raw_output(text, output_path=output_path, delete_first=False)
 
-    def k_best(self, k, prob_vec):
+    def k_best(self, k, prob_vec, non_det=.05):
         """
         Return k-best hypotheses.
         --k: beam search width
         --prob_vec: vector of character probabilities.
+        --non_det: add some randomness to the selection to prevent repetition. Off if >= 1.0
         """
         k_best_idxs = np.argsort(prob_vec)[-k:]
+        if non_det < 1.:
+            rand = np.random.uniform()
+            if rand < non_det:
+                k_best_idxs = np.random.randint(len(prob_vec)//2, len(prob_vec)-k, k)
         k_best_chars = [self.idx2char(idx) for idx in k_best_idxs]
         k_best_probs = [prob_vec[idx] for idx in k_best_idxs]
         return k_best_chars, k_best_probs
