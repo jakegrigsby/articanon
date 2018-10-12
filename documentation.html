@@ -9,34 +9,39 @@
 <font color="#000000" face="helvetica, arial"><strong>articanon.Articanon</strong> = <a name="articanon.Articanon">class Articanon</a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt>The&nbsp;main&nbsp;wrapper&nbsp;class&nbsp;for&nbsp;generating&nbsp;text.&nbsp;Uses&nbsp;a&nbsp;language&nbsp;model&nbsp;(&nbsp;p(y|x_0...x_n)&nbsp;)&nbsp;to&nbsp;generate&nbsp;text&nbsp;verse&nbsp;by&nbsp;verse.<br>
+<td colspan=2><tt>The&nbsp;main&nbsp;wrapper&nbsp;class&nbsp;for&nbsp;generating&nbsp;text.&nbsp;Uses&nbsp;a&nbsp;language&nbsp;model&nbsp;(&nbsp;f(x)&nbsp;=&nbsp;p(x_n|x_0...x_n-1)&nbsp;)&nbsp;to&nbsp;generate&nbsp;text&nbsp;verse&nbsp;by&nbsp;verse.<br>
 Verses&nbsp;are&nbsp;compiled&nbsp;into&nbsp;a&nbsp;pdf,&nbsp;using&nbsp;book.Book.<br>
 &nbsp;<br>
---model:&nbsp;a&nbsp;keras-based&nbsp;language&nbsp;Model&nbsp;object.<br>
 --repetition_penalty:&nbsp;score&nbsp;penalty&nbsp;for&nbsp;repetition&nbsp;during&nbsp;beam&nbsp;search.<br>
 --spell_penalty:&nbsp;score&nbsp;penalty&nbsp;for&nbsp;misspelled&nbsp;words.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>
 --unique_words_reward:&nbsp;score&nbsp;reward&nbsp;for&nbsp;unique&nbsp;words,&nbsp;encouraging&nbsp;larger&nbsp;vocabulary.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>
---length_normalization_alpha:&nbsp;exponent&nbsp;for&nbsp;length&nbsp;normalization&nbsp;of&nbsp;beam&nbsp;search&nbsp;hypotheses.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;beam&nbsp;search.<br>&nbsp;</tt></td></tr>
+--length_normalization_alpha:&nbsp;exponent&nbsp;for&nbsp;length&nbsp;normalization&nbsp;of&nbsp;beam&nbsp;search&nbsp;hypotheses.&nbsp;Calculated&nbsp;during&nbsp;final&nbsp;evaluation&nbsp;of&nbsp;<br>
+&nbsp;&nbsp;beam&nbsp;search.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Articanon-__init__"><strong>__init__</strong></a>(self, model=None, repetition_penalty=50, spell_penalty=500, unique_words_reward=5, length_normalization_alpha=0.5)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
+<dl><dt><a name="Articanon-__init__"><strong>__init__</strong></a>(self, repetition_penalty=5, spell_penalty=10, unique_words_reward=0.55, length_normalization_alpha=0.3)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
 
-<dl><dt><a name="Articanon-assemble_book"><strong>assemble_book</strong></a>(self, chapter_list)</dt><dd><tt>Utility&nbsp;function&nbsp;for&nbsp;assembling&nbsp;pre-generated&nbsp;chapters&nbsp;into&nbsp;a&nbsp;pdf.<br>
---chapter_list&nbsp;=&nbsp;list&nbsp;of&nbsp;.txt&nbsp;generation&nbsp;file&nbsp;names&nbsp;outputed&nbsp;by&nbsp;generate_chapter()&nbsp;or&nbsp;similar&nbsp;generation&nbsp;algs.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In&nbsp;format&nbsp;of&nbsp;[['filename.txt',&nbsp;'chapter&nbsp;name'],&nbsp;['filename2.txt',&nbsp;'2nd&nbsp;chapter&nbsp;name'],&nbsp;etc]</tt></dd></dl>
+<dl><dt><a name="Articanon-assemble_book"><strong>assemble_book</strong></a>(self, chapter_list, output_path='output/articanon.pdf')</dt><dd><tt>Utility&nbsp;function&nbsp;for&nbsp;assembling&nbsp;pre-generated&nbsp;chapters&nbsp;into&nbsp;a&nbsp;pdf.<br>
+--chapter_list&nbsp;=&nbsp;list&nbsp;of&nbsp;.txt&nbsp;generation&nbsp;file&nbsp;names&nbsp;outputed&nbsp;by&nbsp;<a href="#articanon.Articanon-generate_chapter_beam">generate_chapter_beam</a>()<br>
+or&nbsp;generat_chapter_vanilla().<br>
+In&nbsp;format&nbsp;of&nbsp;[['filename.txt',&nbsp;'chapter&nbsp;name'],&nbsp;['filename2.txt',&nbsp;'2nd&nbsp;chapter&nbsp;name'],&nbsp;etc]</tt></dd></dl>
+
+<dl><dt><a name="Articanon-build_model"><strong>build_model</strong></a>(self)</dt><dd><tt>Assemble&nbsp;the&nbsp;keras&nbsp;language&nbsp;model.&nbsp;Used&nbsp;in&nbsp;generation&nbsp;and&nbsp;training.&nbsp;A&nbsp;sequence&nbsp;to&nbsp;sequence&nbsp;model&nbsp;using&nbsp;a&nbsp;bilayer&nbsp;encoder<br>
+and&nbsp;decoder&nbsp;w/&nbsp;dropout&nbsp;and&nbsp;a&nbsp;hidden&nbsp;dimension&nbsp;of&nbsp;350.&nbsp;Reaaches&nbsp;~98%&nbsp;accuracy&nbsp;on&nbsp;the&nbsp;training&nbsp;set.</tt></dd></dl>
 
 <dl><dt><a name="Articanon-char2vec"><strong>char2vec</strong></a>(self, char)</dt><dd><tt>Convert&nbsp;ascii&nbsp;character&nbsp;to&nbsp;one_hot_vector,&nbsp;as&nbsp;determined&nbsp;by&nbsp;one&nbsp;hot&nbsp;idxs&nbsp;in&nbsp;txt_to_np.py</tt></dd></dl>
 
-<dl><dt><a name="Articanon-data_tester"><strong>data_tester</strong></a>(self)</dt></dl>
+<dl><dt><a name="Articanon-data_tester"><strong>data_tester</strong></a>(self)</dt><dd><tt>Sanity&nbsp;check&nbsp;for&nbsp;data.txt_to_np&nbsp;script&nbsp;success</tt></dd></dl>
 
-<dl><dt><a name="Articanon-editor"><strong>editor</strong></a>(self, text)</dt><dd><tt>The&nbsp;dataset&nbsp;is&nbsp;too&nbsp;small&nbsp;to&nbsp;use&nbsp;capitalized&nbsp;letters,&nbsp;so&nbsp;the&nbsp;grammar&nbsp;the&nbsp;model&nbsp;learns&nbsp;has&nbsp;no&nbsp;concept&nbsp;of&nbsp;capitalization.&nbsp;This&nbsp;converts&nbsp;that&nbsp;learned&nbsp;grammar&nbsp;to&nbsp;proper&nbsp;English.<br>
+<dl><dt><a name="Articanon-editor"><strong>editor</strong></a>(self, text)</dt><dd><tt>The&nbsp;dataset&nbsp;is&nbsp;too&nbsp;small&nbsp;to&nbsp;use&nbsp;capitalized&nbsp;letters,&nbsp;so&nbsp;the&nbsp;grammar&nbsp;the&nbsp;model&nbsp;learns&nbsp;has&nbsp;no&nbsp;concept&nbsp;of&nbsp;capitalization.<br>
+This&nbsp;converts&nbsp;that&nbsp;learned&nbsp;grammar&nbsp;to&nbsp;proper&nbsp;English...<br>
 Or&nbsp;we're&nbsp;just&nbsp;cheating.<br>
 --text:&nbsp;input&nbsp;text.</tt></dd></dl>
 
 <dl><dt><a name="Articanon-filter_verses"><strong>filter_verses</strong></a>(self, text_path)</dt><dd><tt>Simple&nbsp;routine&nbsp;for&nbsp;filtering&nbsp;out&nbsp;unwanted&nbsp;verses.&nbsp;Call&nbsp;after&nbsp;a&nbsp;chapter&nbsp;has&nbsp;been&nbsp;generated.<br>
 --text_path:&nbsp;the&nbsp;raw&nbsp;output&nbsp;of&nbsp;the&nbsp;generation&nbsp;step.</tt></dd></dl>
 
-<dl><dt><a name="Articanon-generate_chapter_beam"><strong>generate_chapter_beam</strong></a>(self, k, nb_verse, output_path, delete_first, live_monitor, seed=None)</dt><dd><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verse&nbsp;by&nbsp;verse&nbsp;beam&nbsp;search.&nbsp;Includes:<br>
+<dl><dt><a name="Articanon-generate_chapter_beam"><strong>generate_chapter_beam</strong></a>(self, k, nb_verse, output_path, delete_first, seed=None)</dt><dd><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verse&nbsp;by&nbsp;verse&nbsp;beam&nbsp;search.&nbsp;Includes:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;Repetition&nbsp;reduction<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;final&nbsp;re-scoring<br>
 &nbsp;<br>
@@ -50,13 +55,12 @@ Or&nbsp;we're&nbsp;just&nbsp;cheating.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--delete_first:&nbsp;Delete&nbsp;the&nbsp;first&nbsp;verse.&nbsp;Used&nbsp;when&nbsp;generating&nbsp;multiple&nbsp;chapters<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;giving&nbsp;the&nbsp;generator&nbsp;a&nbsp;seed&nbsp;for&nbsp;each&nbsp;one&nbsp;is&nbsp;too&nbsp;tedious;&nbsp;allows&nbsp;for&nbsp;more<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;randomness&nbsp;and&nbsp;'self&nbsp;inspiration'.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--live_monitor:&nbsp;option&nbsp;to&nbsp;approve/decline&nbsp;verses&nbsp;as&nbsp;they&nbsp;are&nbsp;generated.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Not&nbsp;practical&nbsp;when&nbsp;generating&nbsp;large&nbsp;outputs&nbsp;(which&nbsp;usually&nbsp;need&nbsp;to&nbsp;run&nbsp;overnight).<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--seed:&nbsp;optional&nbsp;starting&nbsp;seed&nbsp;for&nbsp;text&nbsp;generation&nbsp;loop-if&nbsp;you&nbsp;want&nbsp;to&nbsp;prompt<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;articanon&nbsp;to&nbsp;talk&nbsp;about&nbsp;something&nbsp;specific.&nbsp;If&nbsp;none&nbsp;is&nbsp;given,&nbsp;a&nbsp;random&nbsp;seed&nbsp;is&nbsp;taken<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;the&nbsp;source&nbsp;text&nbsp;and&nbsp;is&nbsp;used&nbsp;to&nbsp;write&nbsp;the&nbsp;first&nbsp;verse,&nbsp;which&nbsp;is&nbsp;then&nbsp;discarded.</tt></dd></dl>
 
-<dl><dt><a name="Articanon-generate_chapter_vanilla"><strong>generate_chapter_vanilla</strong></a>(self, nb_verse=300, temperature=0.3, output_path='output/vanilla_output.txt', seed=None)</dt><dd><tt>Generates&nbsp;text&nbsp;using&nbsp;repeated&nbsp;single-character&nbsp;prediction&nbsp;loop.&nbsp;Samples&nbsp;from&nbsp;language&nbsp;model's&nbsp;output&nbsp;distribution&nbsp;according&nbsp;to&nbsp;some&nbsp;temperature.<br>
+<dl><dt><a name="Articanon-generate_chapter_vanilla"><strong>generate_chapter_vanilla</strong></a>(self, nb_verse=30, temperature=0.3, output_path='output/vanilla_output.txt', seed=None)</dt><dd><tt>Generates&nbsp;text&nbsp;using&nbsp;repeated&nbsp;single-character&nbsp;prediction&nbsp;loop.&nbsp;Samples&nbsp;from&nbsp;language&nbsp;model's&nbsp;output&nbsp;distribution<br>
+according&nbsp;to&nbsp;some&nbsp;temperature.<br>
 --nb_verse:&nbsp;number&nbsp;of&nbsp;verses&nbsp;to&nbsp;generate.<br>
 --temperature:&nbsp;temperature&nbsp;for&nbsp;sampling&nbsp;function.&nbsp;Higher&nbsp;values&nbsp;increase&nbsp;selection&nbsp;of&nbsp;less-likely&nbsp;characters.<br>
 --output_path:&nbsp;where&nbsp;to&nbsp;output&nbsp;raw&nbsp;txt&nbsp;file&nbsp;containing&nbsp;generated&nbsp;text.<br>
@@ -68,7 +72,7 @@ Or&nbsp;we're&nbsp;just&nbsp;cheating.<br>
 --k:&nbsp;beam&nbsp;search&nbsp;width<br>
 --prob_vec:&nbsp;vector&nbsp;of&nbsp;character&nbsp;probabilities.</tt></dd></dl>
 
-<dl><dt><a name="Articanon-new_chapter_title"><strong>new_chapter_title</strong></a>(self)</dt><dd><tt>return&nbsp;'random'&nbsp;chapter&nbsp;title&nbsp;from&nbsp;shuffled&nbsp;list&nbsp;of&nbsp;Dhammapada&nbsp;chapter&nbsp;titles.<br>
+<dl><dt><a name="Articanon-new_chapter_title"><strong>new_chapter_title</strong></a>(self)</dt><dd><tt>return&nbsp;'random'&nbsp;chapter&nbsp;title&nbsp;from&nbsp;shuffled&nbsp;list&nbsp;of&nbsp;Dhammapada&nbsp;+&nbsp;made&nbsp;up&nbsp;titles.<br>
 If&nbsp;all&nbsp;titles&nbsp;have&nbsp;been&nbsp;used,&nbsp;you've&nbsp;read&nbsp;so&nbsp;much&nbsp;Buddhism&nbsp;you've&nbsp;reached&nbsp;enlightenment;<br>
 titles&nbsp;will&nbsp;be&nbsp;called&nbsp;Awakening.</tt></dd></dl>
 

@@ -1,15 +1,26 @@
 """
 Cavalier Machine Learning, University of Virginia
 September 2018
+
+Script for training articanon's language model.
+Uses encoder/decoder seq2seq model built with LSTMs and attention.
+Bidirectional first layer, two layer encoder and two layer decoder.
+Dropout is applied to help with generalization, but in this use case
+we aren't too concerned with overfitting. Categorical cross-entropy 
+loss with an adam optimizer.
+
+Uses tensorboard for visualization during the relatively long (600 epoch)
+training run. Takes ~44 hours on a single mid-tier GPU.
+
+Saves best (according to training set accuracy; we aren't using validation
+data) and latest weights to ./model_saves.
 """
-from keras.models import Model
-from keras.layers.core import *
-from keras.layers import Input, Bidirectional, LSTM, Multiply
 from keras.optimizers import Adam
 from keras.metrics import categorical_accuracy
 from keras.callbacks import TensorBoard, ModelCheckpoint
 import numpy as np
 from keras.utils import plot_model
+from articanon import Articanon
 
 BATCH_SIZE = 512
 X_LEN = 60
@@ -17,28 +28,12 @@ ALPHABET_LEN = 35
 HIDDEN_DIM = 350
 EPOCHS = 600
 
-def build_model(seq_len=X_LEN):
-    x = Input((seq_len, ALPHABET_LEN))
-    encoder = Bidirectional(LSTM(HIDDEN_DIM, return_sequences=True))(x)
-    encoder = LSTM(HIDDEN_DIM, return_sequences=True, recurrent_dropout=.3, dropout=.2)(encoder)
-    attention = Dense(1, activation='tanh')(encoder)
-    attention = Flatten()(attention)
-    attention = Activation('softmax')(attention)
-    attention = RepeatVector(HIDDEN_DIM)(attention)
-    attention = Permute([2, 1])(attention)
-    attention = Multiply()([encoder, attention])
-    decoder = LSTM(HIDDEN_DIM, recurrent_dropout = .2, dropout= .15, return_sequences=True)(attention)
-    decoder = LSTM(HIDDEN_DIM, recurrent_dropout=.25, dropout=.2)(decoder)
-    y = Dense(ALPHABET_LEN, activation='softmax')(decoder)
-    model = Model(inputs=x, outputs=y)
-    return model
-
 if __name__ == "__main__":
     data = np.load('data/data.npz')
     x_seqs, y_chars = data['x'], data['y']
     assert x_seqs.shape[0] == y_chars.shape[0]
-
-    model = build_model()
+    articanon = Articanon()
+    model = articanon.model
     model.compile(optimizer=Adam(.001), loss='categorical_crossentropy', metrics=[categorical_accuracy, 'acc'])
     model.summary()
     plot_model(model, show_shapes=True, to_file='model_saves/model.png')

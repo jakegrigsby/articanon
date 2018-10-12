@@ -2,13 +2,13 @@
 Cavalier Machine Learning, University of Virginia
 September 2018
 """
-from train import build_model
 import numpy as np
-import keras
 import re
-import train
-from  operator import itemgetter
-from keras.utils import Progbar
+from operator import itemgetter
+from keras.utils import Progbar, plot_model
+from keras.models import Model
+from keras.layers.core import *
+from keras.layers import Input, Bidirectional, LSTM, Multiply
 from data.txt_to_np import parse_raw_txt
 import argparse
 from book import Book
@@ -19,20 +19,20 @@ class Articanon:
     The main wrapper class for generating text. Uses a language model ( f(x) = p(x_n|x_0...x_n-1) ) to generate text verse by verse.
     Verses are compiled into a pdf, using book.Book.
 
-    --model: a keras-based language Model object.
     --repetition_penalty: score penalty for repetition during beam search.
     --spell_penalty: score penalty for misspelled words. Calculated during final evaluation of beam search.
     --unique_words_reward: score reward for unique words, encouraging larger vocabulary. Calculated during final evaluation of beam search.
-    --length_normalization_alpha: exponent for length normalization of beam search hypotheses. Calculated during final evaluation of beam search.
+    --length_normalization_alpha: exponent for length normalization of beam search hypotheses. Calculated during final evaluation of 
+      beam search.
     """
-    def __init__(self, model=None, repetition_penalty=5, spell_penalty=10, unique_words_reward=.55, length_normalization_alpha=.3,):
+    def __init__(self, repetition_penalty=5, spell_penalty=10, unique_words_reward=.55, length_normalization_alpha=.3):
         f = open('data/full_text.txt','r')
         self.full_text = parse_raw_txt('data/full_text.txt')
         f.close()
         self.alphabet = sorted(list(set(self.full_text)))
         self.alph_idxs = dict((symbol, self.alphabet.index(symbol)) for symbol in self.alphabet)
         self.seq_len = 60
-        self.model = model
+        self.model = self.build_model()
         self.spellchecker = SpellChecker()
         self.spellchecker.word_frequency.load_text(self.full_text) #load domain specific words from training data
         with open('data/title_names.txt','r') as f:
@@ -43,7 +43,28 @@ class Articanon:
         self.unique_words_reward = unique_words_reward
         self.length_normalization_alpha = length_normalization_alpha
 
+    def build_model(self):
+        """
+        Assemble the keras language model. Used in generation and training. A sequence to sequence model using a bilayer encoder
+        and decoder w/ dropout and a hidden dimension of 350. Reaaches ~98% accuracy on the training set.
+        """
+        x = Input((self.seq_len, len(self.alphabet)))
+        encoder = Bidirectional(LSTM(350, return_sequences=True))(x)
+        encoder = LSTM(350, return_sequences=True, recurrent_dropout=.3, dropout=.2)(encoder)
+        attention = Dense(1, activation='tanh')(encoder)
+        attention = Flatten()(attention)
+        attention = Activation('softmax')(attention)
+        attention = RepeatVector(350)(attention)
+        attention = Permute([2,1])(attention)
+        attention = Multiply()([encoder, attention])
+        decoder = LSTM(350, recurrent_dropout=.2, dropout=.15, return_sequences=True)(attention)
+        decoder = LSTM(350, recurrent_dropout=.25, dropout=.2)(decoder)
+        y = Dense(len(self.alphabet), activation='softmax')(decoder)
+        model = Model(inputs=x, outputs=y)
+        return model
+
     def data_tester(self):
+        """Sanity check for data.txt_to_np script success"""
         data = np.load('data/data.npz')
         x_seqs, y_chars = data['x'], data['y']
         r_subset = np.random.choice(100000, 5)
@@ -54,8 +75,9 @@ class Articanon:
     def assemble_book(self, chapter_list, output_path='output/articanon.pdf'):
         """
         Utility function for assembling pre-generated chapters into a pdf.
-        --chapter_list = list of .txt generation file names outputed by generate_chapter() or similar generation algs.
-                         In format of [['filename.txt', 'chapter name'], ['filename2.txt', '2nd chapter name'], etc]
+        --chapter_list = list of .txt generation file names outputed by generate_chapter_beam()
+        or generat_chapter_vanilla().
+        In format of [['filename.txt', 'chapter name'], ['filename2.txt', '2nd chapter name'], etc]
         """
         book = Book()
         book.set_title("The Arti Canon")
@@ -148,7 +170,8 @@ class Articanon:
 
     def generate_chapter_vanilla(self, nb_verse=30, temperature=.3, output_path = 'output/vanilla_output.txt', seed=None):
         """
-        Generates text using repeated single-character prediction loop. Samples from language model's output distribution according to some temperature.
+        Generates text using repeated single-character prediction loop. Samples from language model's output distribution
+        according to some temperature.
         --nb_verse: number of verses to generate.
         --temperature: temperature for sampling function. Higher values increase selection of less-likely characters.
         --output_path: where to output raw txt file containing generated text.
@@ -177,18 +200,13 @@ class Articanon:
             text += "1"
         self._clean_raw_output(text, output_path=output_path, delete_first=False)
 
-    def k_best(self, k, prob_vec, non_det=.05):
+    def k_best(self, k, prob_vec):
         """
         Return k-best hypotheses.
         --k: beam search width
         --prob_vec: vector of character probabilities.
-        --non_det: add some randomness to the selection to prevent repetition. Off if >= 1.0
         """
         k_best_idxs = np.argsort(prob_vec)[-k:]
-        if non_det < 1.:
-            rand = np.random.uniform()
-            if rand < non_det:
-                k_best_idxs = np.random.randint(len(prob_vec)//2, len(prob_vec)-k, k)
         k_best_chars = [self.idx2char(idx) for idx in k_best_idxs]
         k_best_probs = [prob_vec[idx] for idx in k_best_idxs]
         return k_best_chars, k_best_probs
@@ -199,7 +217,7 @@ class Articanon:
         new random seed from the source text. used to seed first verse of each chapter,
         which is usually deleted.
         """
-        rand_start = np.random.randint(0, len(self.full_text))
+        rand_start = np.random.randint(0, len(self.full_text)-self.seq_len)
         return self.full_text[rand_start:rand_start+self.seq_len]
 
     def generate_chapter_beam(self, k, nb_verse, output_path, delete_first, seed=None):
@@ -256,9 +274,7 @@ class Articanon:
                 if terminated <= k:
                     hypotheses = sorted(new_hypotheses, key=itemgetter(1))[-k:] #consider the k best options next iteration
                 running = False if terminated >= k else True
-            #print(sorted(hypotheses, key=itemgetter(1)))
             hypotheses = [self._final_score(h) for h in hypotheses]
-            #print(sorted(hypotheses, key=itemgetter(1)))
             best = sorted(hypotheses, key=itemgetter(1))[-1]
             best = best[0][len(seed):] + "1" #'1' added for splitting
             text += best
@@ -267,7 +283,8 @@ class Articanon:
 
     def editor(self, text):
         """
-        The dataset is too small to use capitalized letters, so the grammar the model learns has no concept of capitalization. This converts that learned grammar to proper English.
+        The dataset is too small to use capitalized letters, so the grammar the model learns has no concept of capitalization.
+        This converts that learned grammar to proper English...
         Or we're just cheating.
         --text: input text.
         """
@@ -280,12 +297,12 @@ class Articanon:
             text += sentence + ' '
         #'i' capitalization
         text = re.sub(r' i ', ' I ', text)
-        text = re.sub(r' i, ', ' I, ', text)
+        text = re.sub(r' i([.,?!;"]) ', r' I\1 ', text)
         return text
 
     def new_chapter_title(self):
         """
-        return 'random' chapter title from shuffled list of Dhammapada chapter titles.
+        return 'random' chapter title from shuffled list of Dhammapada + made up titles.
         If all titles have been used, you've read so much Buddhism you've reached enlightenment;
         titles will be called Awakening.
         """
@@ -303,10 +320,9 @@ class Articanon:
         #better vocabulary, longer sentences
         words = string.split(' ')
         for i, word in enumerate(words):
+            #remove characters that interfere w/ spell check.
             words[i] = re.sub(r'[,\.?1\]\[:;\)\(]','',word)
-        #print(words)
         unique_words = len(set(words))
-        #print(unique_words)
         score += self.unique_words_reward*unique_words
         #spelling
         misspelled = self.spellchecker.unknown(words)
@@ -320,12 +336,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ver', choices=['vanilla','beam'],default='beam')
     args = parser.parse_args()
-    model = train.build_model()
+    generator = Articanon()
+    model = generator.model
     model.load_weights('model_saves/articanon_best.h5f')
-    generator = Articanon(model)
     if args.ver == 'beam':
-        generator.generate_chapter_beam(nb_verse=1, k=15, output_path='output/first_chap_output.txt', seed='what is the runtime complexity of a doubly linked list with ghost nodes?', delete_first=False)
-        generator.filter_verses('output/first_chap_output.txt')
+        generator.generate_chapter_beam(nb_verse=1, k=15, output_path='output/test_chap_output.txt', seed='Let a wise man blow off the impurities of his self, as a smith blows off the impurities of silver', delete_first=False)
+        generator.filter_verses('output/test_chap_output.txt')
     if args.ver == 'vanilla':
-        generator.generate_chapter_vanilla(nb_verse=1, temperature=.8, output_path='output/first_chap_output.txt', seed='Let a wise man blow off the impurities of his self, as a smith blows off the impurities of silver')
-    generator.assemble_book([['output/first_chap_output.txt', 'Enlightenment']])
+        generator.generate_chapter_vanilla(nb_verse=1, temperature=.65, output_path='output/test_chap_output.txt', seed='Let a wise man blow off the impurities of his self, as a smith blows off the impurities of silver')
+    generator.assemble_book([['output/test_chap_output.txt', 'Enlightenment']])

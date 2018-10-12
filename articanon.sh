@@ -3,4 +3,4 @@ cd data
 python txt_to_np.py
 cd ..
 python train.py
-python write.py --k 25 --verses 10 --chapters 8
+python write.py --k 15 --verses 12 --chapters 40 --filter False
