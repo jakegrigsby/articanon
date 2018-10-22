@@ -17,7 +17,7 @@ def parse_raw_txt(source='full_text.txt', display=False):
     and format correctly for teacher forcing dataset.
     """
     f = open(source,'r')
-    full_text = f.read()
+    full_text = f.read().strip()
     if display:
         print("Original text length: " + str(len(full_text)))
     full_text = re.sub(r'[^\x00-\x7F]', '', full_text) #remove non-ascii
@@ -32,6 +32,8 @@ def parse_raw_txt(source='full_text.txt', display=False):
     full_text = re.sub(r'[\]]',')', full_text)
     full_text = re.sub(r'\((.){0,150}\)[.,!?]?','', full_text) #one of the books puts non-english vocab in parentheses.
     full_text = re.sub(r'\(','',full_text)
+    full_text = re.sub(r'_', '', full_text)
+    full_text = re.sub(r' {2,}', ' ', full_text)
     if display:
         print("Final text length: " + str(len(full_text)))
         print("Sample: \n" + full_text)
@@ -46,7 +48,7 @@ def random_shuffle(x, y):
 
 if __name__ == "__main__":
     full_text = parse_raw_txt('full_text.txt', True)
-    X_LEN = 60
+    X_LEN = 70
     STRIDE = 2
 
     x_seqs = []

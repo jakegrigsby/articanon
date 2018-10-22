@@ -19,7 +19,7 @@ Verses&nbsp;are&nbsp;compiled&nbsp;into&nbsp;a&nbsp;pdf,&nbsp;using&nbsp;book.Bo
 &nbsp;&nbsp;beam&nbsp;search.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Articanon-__init__"><strong>__init__</strong></a>(self, repetition_penalty=5, spell_penalty=10, unique_words_reward=0.55, length_normalization_alpha=0.3)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
+<dl><dt><a name="Articanon-__init__"><strong>__init__</strong></a>(self, repetition_penalty=10, spell_penalty=20, unique_words_reward=0.34, length_normalization_alpha=0.65)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
 
 <dl><dt><a name="Articanon-assemble_book"><strong>assemble_book</strong></a>(self, chapter_list, output_path='output/articanon.pdf')</dt><dd><tt>Utility&nbsp;function&nbsp;for&nbsp;assembling&nbsp;pre-generated&nbsp;chapters&nbsp;into&nbsp;a&nbsp;pdf.<br>
 --chapter_list&nbsp;=&nbsp;list&nbsp;of&nbsp;.txt&nbsp;generation&nbsp;file&nbsp;names&nbsp;outputed&nbsp;by&nbsp;<a href="#articanon.Articanon-generate_chapter_beam">generate_chapter_beam</a>()<br>
@@ -27,7 +27,7 @@ or&nbsp;generat_chapter_vanilla().<br>
 In&nbsp;format&nbsp;of&nbsp;[['filename.txt',&nbsp;'chapter&nbsp;name'],&nbsp;['filename2.txt',&nbsp;'2nd&nbsp;chapter&nbsp;name'],&nbsp;etc]</tt></dd></dl>
 
 <dl><dt><a name="Articanon-build_model"><strong>build_model</strong></a>(self)</dt><dd><tt>Assemble&nbsp;the&nbsp;keras&nbsp;language&nbsp;model.&nbsp;Used&nbsp;in&nbsp;generation&nbsp;and&nbsp;training.&nbsp;A&nbsp;sequence&nbsp;to&nbsp;sequence&nbsp;model&nbsp;using&nbsp;a&nbsp;bilayer&nbsp;encoder<br>
-and&nbsp;decoder&nbsp;w/&nbsp;dropout&nbsp;and&nbsp;a&nbsp;hidden&nbsp;dimension&nbsp;of&nbsp;350.&nbsp;Reaaches&nbsp;~98%&nbsp;accuracy&nbsp;on&nbsp;the&nbsp;training&nbsp;set.</tt></dd></dl>
+and&nbsp;decoder&nbsp;w/&nbsp;dropout&nbsp;and&nbsp;a&nbsp;hidden&nbsp;dimension&nbsp;of&nbsp;400.&nbsp;Reaaches&nbsp;~96%&nbsp;accuracy&nbsp;on&nbsp;the&nbsp;training&nbsp;set.</tt></dd></dl>
 
 <dl><dt><a name="Articanon-char2vec"><strong>char2vec</strong></a>(self, char)</dt><dd><tt>Convert&nbsp;ascii&nbsp;character&nbsp;to&nbsp;one_hot_vector,&nbsp;as&nbsp;determined&nbsp;by&nbsp;one&nbsp;hot&nbsp;idxs&nbsp;in&nbsp;txt_to_np.py</tt></dd></dl>
 

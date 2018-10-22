@@ -25,6 +25,7 @@ if __name__ == "__main__":
         articanon.generate_chapter_beam(nb_verse=args.verses,
                                     k=args.k,
                                     output_path='./output/chapter{}.txt'.format(chap+1), delete_first=True)
+    
     chapter_list = []
     for chap in range(args.chapters):
         filename = './output/chapter{}.txt'.format(chap+1)
@@ -32,4 +33,4 @@ if __name__ == "__main__":
             articanon.filter_verses(filename)
         chapter_list.append((filename, articanon.new_chapter_title()))
 
-    articanon.assemble_book(chapter_list, output_path='output/articanon4.pdf')
+    articanon.assemble_book(chapter_list, output_path='output/articanon.pdf')

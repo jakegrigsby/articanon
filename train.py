@@ -22,10 +22,9 @@ import numpy as np
 from keras.utils import plot_model
 from articanon import Articanon
 
-BATCH_SIZE = 512
-X_LEN = 60
+BATCH_SIZE = 256
+X_LEN = 70
 ALPHABET_LEN = 35
-HIDDEN_DIM = 350
 EPOCHS = 600
 
 if __name__ == "__main__":
@@ -36,12 +35,12 @@ if __name__ == "__main__":
     model = articanon.model
     model.compile(optimizer=Adam(.001), loss='categorical_crossentropy', metrics=[categorical_accuracy, 'acc'])
     model.summary()
-    plot_model(model, show_shapes=True, to_file='model_saves/model.png')
+    plot_model(model, show_shapes=True, to_file='model_saves/model_ext.png')
 
     callbacks = [
         TensorBoard(log_dir='log_dir/'),
+        ModelCheckpoint('model_saves/articanon_latest.h5f', period=2, save_best_only=False),
         ModelCheckpoint('model_saves/articanon_best.h5f', period=2, monitor='acc', save_best_only=True),
-        ModelCheckpoint('model_saves/articanon_latest.h5f', period=2, save_best_only=False)
     ]
 
-    history = model.fit(x_seqs, y_chars, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=callbacks, validation_split=0, shuffle=True)
+    history = model.fit(x_seqs, y_chars, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=callbacks, shuffle=True)

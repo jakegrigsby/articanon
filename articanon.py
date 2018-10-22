@@ -25,13 +25,13 @@ class Articanon:
     --length_normalization_alpha: exponent for length normalization of beam search hypotheses. Calculated during final evaluation of 
       beam search.
     """
-    def __init__(self, repetition_penalty=5, spell_penalty=10, unique_words_reward=.55, length_normalization_alpha=.3):
+    def __init__(self, repetition_penalty=10, spell_penalty=20, unique_words_reward=.34, length_normalization_alpha=.65):
         f = open('data/full_text.txt','r')
         self.full_text = parse_raw_txt('data/full_text.txt')
         f.close()
         self.alphabet = sorted(list(set(self.full_text)))
         self.alph_idxs = dict((symbol, self.alphabet.index(symbol)) for symbol in self.alphabet)
-        self.seq_len = 60
+        self.seq_len = 70
         self.model = self.build_model()
         self.spellchecker = SpellChecker()
         self.spellchecker.word_frequency.load_text(self.full_text) #load domain specific words from training data
@@ -46,19 +46,19 @@ class Articanon:
     def build_model(self):
         """
         Assemble the keras language model. Used in generation and training. A sequence to sequence model using a bilayer encoder
-        and decoder w/ dropout and a hidden dimension of 350. Reaaches ~98% accuracy on the training set.
+        and decoder w/ dropout and a hidden dimension of 400. Reaaches ~96% accuracy on the training set.
         """
         x = Input((self.seq_len, len(self.alphabet)))
-        encoder = Bidirectional(LSTM(350, return_sequences=True))(x)
-        encoder = LSTM(350, return_sequences=True, recurrent_dropout=.3, dropout=.2)(encoder)
+        encoder = Bidirectional(LSTM(400, return_sequences=True))(x)
+        encoder = LSTM(400, return_sequences=True, recurrent_dropout=.35, dropout=.3)(encoder)
         attention = Dense(1, activation='tanh')(encoder)
         attention = Flatten()(attention)
         attention = Activation('softmax')(attention)
-        attention = RepeatVector(350)(attention)
+        attention = RepeatVector(400)(attention)
         attention = Permute([2,1])(attention)
         attention = Multiply()([encoder, attention])
-        decoder = LSTM(350, recurrent_dropout=.2, dropout=.15, return_sequences=True)(attention)
-        decoder = LSTM(350, recurrent_dropout=.25, dropout=.2)(decoder)
+        decoder = LSTM(400, recurrent_dropout=.35, dropout=.3, return_sequences=True)(attention)
+        decoder = LSTM(400, recurrent_dropout=.35, dropout=.3)(decoder)
         y = Dense(len(self.alphabet), activation='softmax')(decoder)
         model = Model(inputs=x, outputs=y)
         return model
@@ -297,7 +297,8 @@ class Articanon:
             text += sentence + ' '
         #'i' capitalization
         text = re.sub(r' i ', ' I ', text)
-        text = re.sub(r' i([.,?!;"]) ', r' I\1 ', text)
+        text = re.sub(r' i([.,?!;\"]) ', r' I\1 ', text)
+        text = re.sub(r'i\'', r'I\'', text)
         return text
 
     def new_chapter_title(self):

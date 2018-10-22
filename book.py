@@ -4,8 +4,6 @@ September 2018
 """
 from fpdf import FPDF
 
-TITLE = 'The Arti Canon'
-
 class Book(FPDF):
     """
     Takes generated .txt output and converts it into an aesthetic pdf.
@@ -22,7 +20,7 @@ class Book(FPDF):
         self.add_font('EB Garamond', '', r"fonts/EBGaramond08-Regular.ttf", uni=True)
         self.set_font('EB Garamond', '', 30)
         self.set_xy(75, 20)
-        self.cell(40, 10, "The Articanon")
+        self.cell(40, 10, "The Arti Canon")
         self.set_font('EB Garamond', '', 16)
         self.set_xy(87, 30)
         self.cell(40, 10, "by 209.51.170.10")
