@@ -14,7 +14,7 @@ Arti Canon is a neural text generation project designed to generate believable w
 4. `book.py` handles conversion from the raw txt output of the generator to a pdf.
 5. `write.py` is the main script for generating multiple chapters and assembling them into one 'book'/pdf.
 
-**(A full technical overview of the project can be found [here](link to the medium post))**
+**(A full technical overview of the project can be found [here](https://medium.com/p/2a8f032c2a68/edit))**
 
 ##### Using the trained model to write your own book
 You can generate your own version of the articanon with the following command:  
